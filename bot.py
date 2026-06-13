@@ -6,7 +6,7 @@ CHAT_ID = "8638992678"
 
 URL = "https://api.telegram.org/bot{}/sendMessage".format(TOKEN)
 
-# Exemple simple (tu remplaceras par une vraie URL Leboncoin plus tard)
+# Exemple simple (https://www.leboncoin.fr/recherche?category=2&text=polo%205&locations=Sarrebourg_57400__48.73292_7.05234_5000_50000&price=min-7000&mileage=min-160000)
 SEARCH_URL = "https://www.leboncoin.fr/recherche?category=2&text=bmw%20330d"
 
 last_check = ""
