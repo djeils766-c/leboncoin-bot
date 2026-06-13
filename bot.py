@@ -1,32 +1,52 @@
 import requests
-import time
+import json
 
 TOKEN = "8904724152:AAEMm7xRAoNS4TafgrIzxlW0gdIPgm9XpaE"
 CHAT_ID = "8638992678"
 
-URL = "https://api.telegram.org/bot{}/sendMessage".format(TOKEN)
+SEARCH_URL = "https://www.leboncoin.fr/recherche?category=2&text=polo%205&locations=Sarrebourg_57400__48.73292_7.05234_5000_50000&price=min-7000&mileage=min-160000"
 
-# Exemple simple (https://www.leboncoin.fr/recherche?category=2&text=polo%205&locations=Sarrebourg_57400__48.73292_7.05234_5000_50000&price=min-7000&mileage=min-160000)
-SEARCH_URL = "https://www.leboncoin.fr/recherche?category=2&text=bmw%20330d"
-
-last_check = ""
+STATE_FILE = "seen.json"
 
 def send(msg):
-    requests.post(URL, data={
-        "chat_id": CHAT_ID,
-        "text": msg
-    })
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
+
+# Charger annonces déjà vues
+try:
+    with open(STATE_FILE, "r") as f:
+        seen = set(json.load(f))
+except:
+    seen = set()
+
+def save_state():
+    with open(STATE_FILE, "w") as f:
+        json.dump(list(seen), f)
 
 def check():
-    global last_check
+    global seen
 
-    r = requests.get(SEARCH_URL)
-    html = r.text[:2000]
+    r = requests.get(SEARCH_URL, headers={"User-Agent": "Mozilla/5.0"})
+    html = r.text
 
-    if html != last_check:
-        last_check = html
-        send("🚗 Nouvelle annonce détectée sur Leboncoin !")
+    # ⚠️ version simple : on récupère des ids d'annonces
+    # (Leboncoin change parfois son HTML, mais ça marche souvent)
+    parts = html.split('"list_id":"')
 
-while True:
-    check()
-    time.sleep(300)
+    new_found = False
+
+    for p in parts[1:]:
+        ad_id = p.split('"')[0]
+
+        if ad_id not in seen:
+            seen.add(ad_id)
+            new_found = True
+
+            link = f"https://www.leboncoin.fr/ad/voitures/{ad_id}"
+
+            send(f"🚗 Nouvelle annonce détectée !\n\n🔗 {link}")
+
+    if new_found:
+        save_state()
+
+check()
